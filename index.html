@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>邑楽郡シベ地名調査用サイト</title>
+  <meta charset="utf-8">
+  <meta http-equiv="imagetoolbar" content="no"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <!-- Openlayers -->
+  <link rel="stylesheet" href="lib/ol.css" type="text/css">
+  <script type="text/javascript" src="lib/ol.js"></script>
+  <script type="text/javascript" src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL,Object.assign"></script>
+  <!-- ol-ext -->
+  <link rel="stylesheet" href="https://cdn.rawgit.com/Viglino/ol-ext/master/dist/ol-ext.min.css" />
+  <script type="text/javascript" src="https://cdn.rawgit.com/Viglino/ol-ext/master/dist/ol-ext.min.js"></script>
+  <link rel="stylesheet" href="./base.css" type="text/css">
+</head>
+<body>
+<div id="map" class="map"></div>
+<div id="ui">
+  <h3>地物透明度</h3>
+  <input id="slider" type="range" min="0" max="1" step="0.1" value="1" oninput="setOpacity(this.value)">
+  <h3>地物表示スイッチ</h3>
+  <div id="switchList">
+    <input type="checkbox" id="shikagakiSw" checked="checked" onchange="toggleShikagaki(this.checked)"> 鹿垣<br>
+    <input type="checkbox" id="jizoSw" checked="checked" onchange="toggleJizo(this.checked)"> 地蔵<br>
+    <input type="checkbox" id="nogamiSw" checked="checked" onchange="toggleNogami(this.checked)"> 野神<br>
+    <input type="checkbox" id="shukeiSw" onchange="toggleShukei(this.checked)"> 集計エリア<br>
+  </div>
+  <h3>地蔵/野神集計テーブル</h3>
+  <div id="tintList">
+    <div id="tintTable">
+      <div class="column col2 row2"></div>
+      <div class="column row2">個数</div>
+      <div class="column row2">面積 (km2)</div>
+      <div class="column row2">密度 (個/km2)</div>
+
+      <div class="column row2">地蔵</div>
+      <div class="column">鹿垣内</div>
+      <div class="column num">148</div>
+      <div class="column num">4.7</div>
+      <div class="column num">31.1</div>
+
+      <div class="column">鹿垣外</div>
+      <div class="column num">137</div>
+      <div class="column num">29.0</div>
+      <div class="column num">4.7</div>
+
+      <div class="column row2">野神</div>
+      <div class="column">鹿垣内</div>
+      <div class="column num">0</div>
+      <div class="column num">4.7</div>
+      <div class="column num">0</div>
+
+      <div class="column">鹿垣外</div>
+      <div class="column num">9</div>
+      <div class="column num">29.0</div>
+      <div class="column num">0.3</div>
+    </div>
+  </div>
+  <h3>データソース</h3>
+  <dl>
+    <dt>地蔵</dt><dd><a href="https://code4history.dev/JizoProject/" target="_blank">奈良地蔵プロジェクト</a> (Code for History)</dd>
+    <dt>野神</dt><dd>奈良県教育委員会 1985『奈良県文化財調査報告集49 大和の野神行事（下）』</dd>
+    <dt>鹿垣</dt><dd>丹敦, 渡辺伸一 2004 「奈良公園周辺における鹿垣の分布とその残存状況 : フィールドワークに基づく報告と考察」『奈良教育大学紀要. 人文・社会科学』53 (1), 165-180</dd>
+    <dt>集計エリア</dt><dd>地蔵データの網羅性が高い領域を矩形(経度135.78から135.85、緯度34.66から34.71)で選び、山側の領域を一部削除</dd>
+  </dl>
+  <h3>課題</h3>
+  <ul>
+    <li>現在の地蔵データは、地蔵の設置場所で集計されており、地蔵の個数はデータ化されていない、地蔵の個数で分析する必要があるかもしれない</li>
+    <li>現在の地蔵データは、始まった経緯上、路傍のもののみを対象にしており、寺院境内のものを集計対象にしていない</li>
+    <li>現在の地蔵データは、近世以前のものと近代のものを分けていません、近世以前のものに絞った方がよいかもしれない</li>
+    <li>鹿垣の内/外は町方、村方の境であるが、この地蔵密度の差が信仰の質の違いによるのか、それとも土地利用の差によるのかは将来確認したほうが良いかもしれない。つまり、村方でも集落近くでは同じくらいの密度で存在するのか、など</li>
+  </ul>
+</div>
+<script>
+  const query = {};
+  let hashes = (window.location.href.split('#!'))[0];
+  hashes = hashes.slice(window.location.href.indexOf('?') + 1).split('&');
+  for (let i = 0; i < hashes.length; i++) {
+    const hash = hashes[i].split('=');
+    query[hash[0]] = hash[1] === "true" ? true : hash[1] === "false" ? false : hash[1];
+  }
+
+  let map;
+  let layer;
+
+  const mapMinZoom = 10;
+  let opacity = 1;
+  let shikagakiSwitch = 1;
+  let jizoSwitch = 1;
+  let nogamiSwitch = 1;
+  let shukeiSwitch = 0;
+
+  // Styles
+  const jizoStyle = new ol.style.Style({
+    image: new ol.style.Circle({
+      radius: 5,
+      fill: new ol.style.Fill({color: "#ff000066"}),
+      stroke: new ol.style.Stroke({color: "#ff0000ff", width: 3}),
+    })
+  });
+  const nogamiStyle = new ol.style.Style({
+    image: new ol.style.Circle({
+      radius: 5,
+      fill: new ol.style.Fill({color: "#00ff0066"}),
+      stroke: new ol.style.Stroke({color: "#00ff00ff", width: 3}),
+    })
+  });
+  const shikagakiStyle = new ol.style.Style({
+    stroke: new ol.style.Stroke({color: "#0000ffff", width: 4})
+  });
+  const shukeiStyle = (feature, resolution) => {
+    const area_name = feature.get("name")
+    const area_color = feature.get("ID") == 1 ? "#00ffff" : "#ff00ff"
+
+    return [new ol.style.Style({
+      stroke: new ol.style.Stroke({color: `${area_color}aa`, width: 2}),
+      fill: new ol.style.Fill({color: `${area_color}66`}),
+      text: new ol.style.Text({
+        textAlign: "left",
+        font: "Bold 16px/1 Verdana",
+        text: area_name,
+        fill: new ol.style.Fill({color: `${area_color}cc`}),
+        stroke: new ol.style.Stroke({color: `#000000ff`, width: 2}),
+        overflow: true,
+        offsetX: 8
+      })
+    })];
+  }
+
+  // Layers
+  const jizoLayer = new ol.layer.Vector({
+    source: new ol.source.Vector({
+      attributions: 'Data from <a href="https://github.com/code4history/JizoProject">地蔵プロジェクト</a>',
+      format: new ol.format.GeoJSON(),
+      tilePixelRatio: 8,
+      url: "./jizo.geojson",
+    }),
+    style: function(feature, resolution) {
+      return [jizoStyle];
+    }
+  });
+
+  const nogamiLayer = new ol.layer.Vector({
+    source: new ol.source.Vector({
+      attributions: 'Data from "大和の野神行事"',
+      format: new ol.format.GeoJSON(),
+      tilePixelRatio: 8,
+      url: "./nogami.geojson",
+    }),
+    style: function(feature, resolution) {
+      return [nogamiStyle];
+    }
+  });
+
+  const shikagakiLayer = new ol.layer.Vector({
+    source: new ol.source.Vector({
+      attributions: 'Data from "奈良公園周辺における鹿垣の分布とその残存状況"',
+      format: new ol.format.GeoJSON(),
+      tilePixelRatio: 8,
+      url: "./shikagaki.geojson",
+    }),
+    style: function(feature, resolution) {
+      return [shikagakiStyle];
+    }
+  });
+
+  const shukeiLayer = new ol.layer.Vector({
+    source: new ol.source.Vector({
+      attributions: 'Data from "奈良公園周辺における鹿垣の分布とその残存状況"',
+      format: new ol.format.GeoJSON(),
+      tilePixelRatio: 8,
+      url: "./shikagaki_polygon.geojson",
+    }),
+    style: shukeiStyle
+  });
+
+  function setOpacity(value) {
+    opacity = parseFloat(value);
+    representOpacity();
+  }
+
+  function representOpacity() {
+    shikagakiLayer.setOpacity(opacity * shikagakiSwitch);
+    jizoLayer.setOpacity(opacity * jizoSwitch);
+    nogamiLayer.setOpacity(opacity * nogamiSwitch);
+    shukeiLayer.setOpacity(opacity * shukeiSwitch);
+  }
+
+  map = new ol.Map({
+    target: 'map',
+    layers: [],
+    view: new ol.View({
+      center: ol.proj.fromLonLat([135.8110491517765, 34.685479598924644]),
+      zoom: 13,
+      minZoom: mapMinZoom,
+    })
+  });
+  const gps = new ol.control.GeolocationButton({
+    delay: 20000
+  });
+  map.addControl(gps);
+
+  map.getLayers().insertAt(1, shukeiLayer);
+  map.getLayers().insertAt(2, nogamiLayer);
+  map.getLayers().insertAt(3, jizoLayer);
+  map.getLayers().insertAt(4, shikagakiLayer);
+
+  const gsiLayer = new ol.layer.Tile({
+    source: new ol.source.XYZ({
+      attributions: "<a href='https://maps.gsi.go.jp/development/ichiran.html' target='_blank'>地理院タイル</a>",
+      url: "https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png",
+      projection: "EPSG:3857"
+    })
+  })
+  map.getLayers().insertAt(0, gsiLayer);
+
+  function toggleShikagaki(value) {
+    shikagakiSwitch = value ? 1 : 0;
+    representOpacity();
+  }
+  function toggleJizo(value) {
+    jizoSwitch = value ? 1 : 0;
+    representOpacity();
+  }
+  function toggleNogami(value) {
+    nogamiSwitch = value ? 1 : 0;
+    representOpacity();
+  }
+  function toggleShukei(value) {
+    shukeiSwitch = value ? 1 : 0;
+    representOpacity();
+  }
+
+  representOpacity();
+</script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+@media only screen and (min-width: 768px) {
+  #map{top:0;left:0;right:300px;bottom:0;width:calc(100% - 300px);height:100%}
+  #ui{top:0;left:auto;right:0;bottom:0;width:300px;height:100%}
+}
+
+@media only screen and (max-width: 767px) {
+  #map{top:0;left:0;right:0;bottom:230px;width:100%;height:calc(100% - 230px);}
+  #ui{top:auto;left:0;right:0;bottom:0;width:100%;height:230px}
+}
+
+#ui{position:absolute;overflow:auto}
+
+#layerList, #switchList, #tintList{padding:10px;position:relative}
+
+#tintTable{height:60px;}
+#titleCenter{text-align:center}
+#titleLeft{float:left}
+#titleRight{float:right}
+
+/*#tintTable .row {width:100%;height:20px;display:block;border: 0px none white;}*/
+#tintTable .column {height: 18px;float:left;position:relative;width:calc(100% / 5 - 2px);border: 1px solid black;}
+#tintTable .column.break {clear: both;}
+#tintTable .column.row2 {height: 38px;}
+#tintTable .column.col2 {width: calc(100% / 5 * 2 - 2px);}
+#tintTable .column.num {text-align: right}
+
+#map,.ol-overlaycontainer-stopevent,body,html{overflow:hidden}
+#layerList li{color:#000;cursor:pointer;}
+#layerList li.hidden{opacity:.3}
+#osmCheckbox{left:10px}
+#osmCheckboxLabel{left:30px;text-shadow:#fff 0 0 8px}
+/*#slider{width:200px;top:10px;right:10px;background:#fff;color:#fff}*/
+#slider{left:30px;right:30px;padding-top:10px;padding-bottom:10px;width:calc(100% - 60px);background:#fff;color:#fff;position:relative}
+body,html{width:100%;height:100%;margin:0;padding:0;background:#fff;color:#333;font-family:Arial,sans-serif;font-size:14px;line-height:1}
