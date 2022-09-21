@@ -12,13 +12,8 @@
 
 #layerList, #switchList, #tintList{padding:10px;position:relative; clear:both}
 
-#tintTable{height:120px;}
-
-#tintTable .column {height: 18px;float:left;position:relative;width:calc(100% / 5 - 2px);border: 1px solid black;}
-#tintTable .column.break {clear: both;}
-#tintTable .column.row2 {height: 38px;}
-#tintTable .column.col2 {width: calc(100% / 5 * 2 - 2px);}
-#tintTable .column.num {text-align: right}
+td, th {border: 1px solid black;}
+.num {text-align: right}
 
 #map,.ol-overlaycontainer-stopevent,body,html{overflow:hidden}
 #layerList li{color:#000;cursor:pointer;}

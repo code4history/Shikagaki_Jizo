@@ -29,34 +29,43 @@
   </div>
   <h3>地蔵/野神集計テーブル</h3>
   <div id="tintList">
-    <div id="tintTable">
-      <div class="column col2 row2"></div>
-      <div class="column row2">個数</div>
-      <div class="column row2">面積 (km2)</div>
-      <div class="column row2">密度 (個/km2)</div>
-
-      <div class="column row2">地蔵</div>
-      <div class="column">鹿垣内</div>
-      <div class="column num">148</div>
-      <div class="column num">4.7</div>
-      <div class="column num">31.1</div>
-
-      <div class="column">鹿垣外</div>
-      <div class="column num">137</div>
-      <div class="column num">29.0</div>
-      <div class="column num">4.7</div>
-
-      <div class="column row2">野神</div>
-      <div class="column">鹿垣内</div>
-      <div class="column num">0</div>
-      <div class="column num">4.7</div>
-      <div class="column num">0</div>
-
-      <div class="column">鹿垣外</div>
-      <div class="column num">9</div>
-      <div class="column num">29.0</div>
-      <div class="column num">0.3</div>
-    </div>
+    <table>
+      <tr>
+        <th colspan="2" class="column col2 row2"></th>
+        <th class="column row2">個数</th>
+        <th class="column row2">密度 (個/㎢)</th>
+      </tr>
+      <tr>
+        <td rowspan="2" class="column row2">地蔵</td>
+        <td class="column">鹿垣内</td>
+        <td class="column num">148</td>
+        <td class="column num">31.1</td>
+      </tr>
+      <tr>
+        <td class="column">鹿垣外</td>
+        <td class="column num">137</td>
+        <td class="column num">4.7</td>
+      </tr>
+      <tr>
+        <td rowspan="2" class="column row2">野神</td>
+        <td class="column">鹿垣内</td>
+        <td class="column num">0</td>
+        <td class="column num">0</td>
+      </tr>
+      <tr>
+        <td class="column">鹿垣外</td>
+        <td class="column num">9</td>
+        <td class="column num">0.3</td>
+      </tr>
+    </table>
+    <dl>
+      <dt>集計面積</dt><dd>
+        <dl>
+          <dt>鹿垣内</dt><dd>4.7 ㎢</dd>
+          <dt>鹿垣外</dt><dd>29.0 ㎢</dd>
+        </dl>
+      </dd>
+    </dl>
   </div>
   <h3>データソース</h3>
   <dl>
